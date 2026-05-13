@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REFER CPAH CENTER V4.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; padding-bottom: 100px; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5); }
+        .overdue-card { border: 2px solid #ef4444 !important; box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.2) !important; position: relative; overflow: hidden; }
+        .overdue-badge { position: absolute; top: 0; right: 0; background: #ef4444; color: white; padding: 2px 10px; font-size: 9px; border-radius: 0 0 0 12px; font-weight: bold; }
+        
+        .lock-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 2.5rem; text-align: center; padding: 2rem; }
+        .nav-active { color: #0284c7 !important; position: relative; }
+        .nav-active::after { content: ''; position: absolute; top: -10px; left: 20%; width: 60%; height: 4px; background: #0284c7; border-radius: 0 0 10px 10px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 0.8rem; border-top: 1px solid #e2e8f0; z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        input, select, textarea { border-radius: 14px !important; border: 1.5px solid #e2e8f0 !important; padding: 12px !important; outline: none; transition: 0.3s; width: 100%; }
+        input:focus { border-color: #0284c7 !important; box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.1); }
+        
+        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #0284c7; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .check-icon { width: 80px; height: 80px; position: relative; border-radius: 50%; border: 4px solid #4CAF50; margin: 0 auto; }
+        .icon-line { height: 5px; background-color: #4CAF50; display: block; border-radius: 2px; position: absolute; }
+        .line-tip { top: 46px; left: 14px; width: 25px; transform: rotate(45deg); }
+        .line-long { top: 38px; right: 8px; width: 47px; transform: rotate(-45deg); }
+    </style>
+</head>
+<body class="text-slate-800">
+
+<div id="global-loader" class="loading-overlay hidden">
+    <div class="spinner mb-4"></div>
+    <p class="text-xs font-bold text-sky-800 animate-pulse">กำลังประมวลผล...</p>
+</div>
+
+<header class="bg-sky-800 text-white p-5 sticky top-0 z-50 shadow-lg rounded-b-[2rem]">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="bg-white/20 p-2.5 rounded-2xl shadow-inner"><i class="fas fa-sync-alt text-xl"></i></div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight tracking-tight">REFER CPAH CENTER</h1>
+                <p class="text-[10px] opacity-80" id="time-status">เชื่อมต่อระบบ...</p>
+            </div>
+        </div>
+        <div id="login-info" class="text-[10px] bg-sky-900/50 px-4 py-1.5 rounded-full hidden border border-white/10">
+            <i class="fas fa-user-md mr-1.5"></i> <span id="user-role-display">Guest</span>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-4xl mx-auto p-4 mt-2">
+    <!-- Page: Entry Form -->
+    <section id="page-entry" class="page-content space-y-4 relative">
+        <div id="time-lock-screen" class="lock-overlay hidden">
+            <div class="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                <i class="fas fa-clock text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">ระบบปิดการประสานชั่วคราว</h3>
+            <p class="text-sm text-slate-500 mb-6 leading-relaxed">08:00 - 15:00 น. | นอกเวลาโปรดใช้รหัสฉุกเฉิน</p>
+            <button onclick="openEmergencyModal()" class="bg-amber-500 text-white px-8 py-3 rounded-2xl font-bold shadow-lg transition active:scale-95">
+                <i class="fas fa-exclamation-triangle mr-2"></i> ปลดล็อกกรณีฉุกเฉิน
+            </button>
+        </div>
+
+        <form id="referForm" class="glass p-6 rounded-[2.5rem] card-shadow space-y-5">
+            <div class="flex items-center gap-2 text-sky-800 font-bold mb-1">
+                <i class="fas fa-clipboard-check text-xl"></i> <span>แบบฟอร์มประสานส่งกลับ</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="referDate" readonly class="bg-slate-100 text-slate-500 cursor-not-allowed">
+                <select id="targetHosp" required onchange="toggleOtherHosp()" class="text-sm">
+                    <option value="">-- เลือก รพช. --</option>
+                    <option>โรงพยาบาลกบินทร์บุรี</option>
+                    <option>โรงพยาบาลนาดี</option>
+                    <option>โรงพยาบาลบ้านสร้าง</option>
+                    <option>โรงพยาบาลประจันตคาม</option>
+                    <option>โรงพยาบาลศรีมหาโพธิ</option>
+                    <option>โรงพยาบาลศรีมโหสถ</option>
+                    <option value="Other">อื่น ๆ (ระบุเอง)</option>
+                </select>
+            </div>
+            <input type="text" id="otherHosp" placeholder="ระบุชื่อโรงพยาบาล" class="hidden text-sm">
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="sourceWard" list="ward-list" placeholder="ชื่อ Ward ที่ส่ง" required class="text-sm" oninput="autoFillPhone()">
+                <datalist id="ward-list"></datalist>
+                <input type="tel" id="contactPhone" placeholder="เบอร์โทรติดต่อ" pattern="[0-9]{10}" required class="text-sm">
+            </div>
+            <div class="bg-sky-50/50 p-5 rounded-[2rem] space-y-4 border border-sky-100">
+                <div class="grid grid-cols-3 gap-3">
+                    <input type="text" id="patientHN" placeholder="HN" required class="text-sm">
+                    <input type="text" id="patientName" placeholder="ชื่อ-นามสกุล" required class="col-span-2 text-sm">
+                </div>
+                <textarea id="diagnosis" placeholder="Diagnosis" required class="text-sm h-16"></textarea>
+                <div class="grid grid-cols-2 gap-3">
+                    <select id="isolation" class="text-sm"><option value="None">No Isolation</option><option value="TB">TB</option><option value="Super MDR">Super MDR</option></select>
+                    <select id="oxygen" class="text-sm"><option>Room air</option><option>Cannula</option><option>Mask with bag</option><option>Collar mask</option><option>Ventilator</option></select>
+                </div>
+            </div>
+            <textarea id="reason" placeholder="เหตุผลส่งต่อ / แผนการรักษา" required class="text-sm h-20"></textarea>
+            <div class="relative group">
+                <input type="file" id="pdfFile" accept="application/pdf" class="hidden" onchange="updateFileName(this)">
+                <button type="button" onclick="document.getElementById('pdfFile').click()" class="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 rounded-2xl text-slate-500 hover:bg-sky-50 transition">
+                    <i class="fas fa-file-pdf text-xl"></i><span id="fileNameDisplay" class="text-xs font-bold italic">เลือกไฟล์สรุปการรักษา (PDF)</span>
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <label class="flex flex-col items-center gap-2 p-4 border-2 rounded-2xl cursor-pointer has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50">
+                    <input type="radio" name="transport" value="รพช.มารับ" checked class="hidden"><i class="fas fa-ambulance text-2xl text-sky-600"></i><span class="text-xs font-bold">รพช.มารับ</span>
+                </label>
+                <label class="flex flex-col items-center gap-2 p-4 border-2 rounded-2xl cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
+                    <input type="radio" name="transport" value="ญาติพากลับเอง" class="hidden"><i class="fas fa-car-side text-2xl text-amber-600"></i><span class="text-xs font-bold">ญาติกลับเอง</span>
+                </label>
+            </div>
+            <button type="submit" id="submitBtn" class="w-full bg-sky-700 text-white font-bold py-5 rounded-[1.5rem] shadow-xl hover:bg-sky-800 transition active:scale-95 text-lg">
+                <i class="fas fa-paper-plane mr-2"></i> บันทึกและส่งข้อมูล
+            </button>
+        </form>
+    </section>
+
+    <!-- Page: Dashboard -->
+    <section id="page-dashboard" class="page-content hidden space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-5 rounded-[2rem] shadow-md border-b-4 border-sky-500 text-center">
+                <p class="text-[11px] font-bold text-slate-400 mb-1">ค้างรับทราบ</p>
+                <h3 class="text-3xl font-bold text-sky-700" id="count-pending">0</h3>
+            </div>
+            <div class="bg-white p-5 rounded-[2rem] shadow-md border-b-4 border-amber-500 text-center">
+                <p class="text-[11px] font-bold text-slate-400 mb-1">รอรับกลับ</p>
+                <h3 class="text-3xl font-bold text-amber-600" id="count-wait">0</h3>
+            </div>
+        </div>
+        <div id="history-list" class="space-y-4"></div>
+    </section>
+
+    <!-- Page: Admin CHO -->
+    <section id="page-admin-cho" class="page-content hidden space-y-4">
+        <div class="flex justify-between items-center px-4 bg-white p-4 rounded-3xl shadow-sm">
+            <h2 class="font-bold text-sky-800 flex items-center gap-2"><i class="fas fa-hospital"></i> รายการของ รพ.</h2>
+            <button onclick="logout()" class="text-[11px] bg-rose-50 text-rose-600 px-4 py-2 rounded-full font-bold">ออกจากระบบ</button>
+        </div>
+        <div id="cho-list" class="space-y-4"></div>
+    </section>
+
+    <!-- Page: Admin Center -->
+    <section id="page-admin-center" class="page-content hidden space-y-4">
+        <div class="bg-indigo-900 text-white p-6 rounded-[2.5rem] shadow-xl flex justify-between items-center">
+            <div>
+                <h2 class="font-bold text-xl tracking-wide italic">Admin Center</h2>
+                <p class="text-[10px] opacity-60">ระบบควบคุมส่วนกลาง</p>
+            </div>
+            <button onclick="logout()" class="text-xs bg-white/10 px-3 py-1 rounded-lg">Logout</button>
+        </div>
+        <div id="center-list" class="space-y-4"></div>
+    </section>
+</main>
+
+<nav class="bottom-nav">
+    <button onclick="changePage('entry')" id="nav-entry" class="flex flex-col items-center gap-1 text-slate-400 nav-active"><i class="fas fa-edit text-xl"></i><span class="text-[10px] font-bold">ส่งเคส</span></button>
+    <button onclick="changePage('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-slate-400"><i class="fas fa-tasks text-xl"></i><span class="text-[10px] font-bold">รายการ</span></button>
+    <button onclick="openLoginModal('cho')" id="nav-cho" class="flex flex-col items-center gap-1 text-slate-400"><i class="fas fa-hospital text-xl"></i><span class="text-[10px] font-bold">รพช.</span></button>
+    <button onclick="openLoginModal('center')" id="nav-center" class="flex flex-col items-center gap-1 text-slate-400"><i class="fas fa-user-shield text-xl"></i><span class="text-[10px] font-bold">ศูนย์ REFER</span></button>
+</nav>
+
+<!-- Modals -->
+<div id="login-modal" class="fixed inset-0 bg-slate-900/60 z-[200] hidden flex items-center justify-center p-6 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-xs rounded-[2.5rem] p-8 card-shadow text-center">
+        <div class="w-16 h-16 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-lock text-2xl"></i></div>
+        <h3 class="font-bold mb-6">เข้าสู่ระบบควบคุม</h3>
+        <div id="login-hosp-select-div" class="mb-4">
+            <select id="login-hosp" class="text-sm">
+                <option>โรงพยาบาลกบินทร์บุรี</option><option>โรงพยาบาลนาดี</option><option>โรงพยาบาลบ้านสร้าง</option><option>โรงพยาบาลประจันตคาม</option><option>โรงพยาบาลศรีมหาโพธิ</option><option>โรงพยาบาลศรีมโหสถ</option>
+            </select>
+        </div>
+        <input type="password" id="login-pass" placeholder="รหัสผ่าน" class="mb-6 text-center">
+        <div class="flex gap-3">
+            <button onclick="closeModal('login-modal')" class="flex-1 py-3 text-slate-400 font-bold">ยกเลิก</button>
+            <button onclick="doLogin()" class="flex-1 bg-sky-800 text-white py-3 rounded-2xl font-bold">ตกลง</button>
+        </div>
+    </div>
+</div>
+
+<div id="emergency-modal" class="fixed inset-0 bg-slate-900/60 z-[400] hidden flex items-center justify-center p-6 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-xs rounded-[2.5rem] p-8 card-shadow text-center">
+        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-unlock-alt text-2xl"></i></div>
+        <h3 class="font-bold mb-2">รหัสผ่านฉุกเฉิน</h3>
+        <p class="text-[10px] text-slate-400 mb-6 uppercase tracking-wider">กรุณาระบุรหัสเพื่อเปิดระบบชั่วคราว</p>
+        <input type="password" id="emergency-pass" placeholder="ระบุรหัสผ่าน" class="mb-6 text-center border-red-200">
+        <div class="flex gap-3">
+            <button onclick="closeModal('emergency-modal')" class="flex-1 py-3 text-slate-400 font-bold">ยกเลิก</button>
+            <button onclick="doEmergencyUnlock()" class="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-red-100">ปลดล็อก</button>
+        </div>
+    </div>
+</div>
+
+<div id="success-modal" class="fixed inset-0 bg-slate-900/60 z-[300] hidden flex items-center justify-center p-6 backdrop-blur-md">
+    <div class="bg-white w-full max-w-xs rounded-[3rem] p-10 card-shadow text-center">
+        <div class="check-icon mb-6"><span class="icon-line line-tip"></span><span class="icon-line line-long"></span></div>
+        <h3 class="text-2xl font-bold mb-2">สำเร็จ!</h3>
+        <p class="text-slate-500 text-sm mb-8">บันทึกข้อมูลเรียบร้อยแล้ว</p>
+        <button onclick="closeModal('success-modal')" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-bold">ตกลง</button>
+    </div>
+</div>
+
+<div id="action-modal" class="fixed inset-0 bg-slate-900/60 z-[250] hidden flex items-center justify-center p-6 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-xs rounded-[2.5rem] p-8 card-shadow">
+        <h3 class="font-bold mb-2 text-center text-indigo-900" id="action-title-label">ดำเนินการ</h3>
+        <textarea id="action-reason" placeholder="ระบุหมายเหตุเพิ่มเติม (ถ้ามี)" class="h-20 text-sm mb-4"></textarea>
+        <div class="flex gap-3">
+            <button onclick="closeModal('action-modal')" class="flex-1 py-3 text-slate-400 font-bold">ยกเลิก</button>
+            <button id="reason-confirm-btn" class="flex-1 bg-sky-800 text-white py-3 rounded-2xl font-bold">ยืนยัน</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyW7tQIxT1N9TpDspQtB655r_kO0s9HNFbWadytovKsDDx7NUSKfNESOzdUdJtNaQGH-g/exec"; 
+const EMERGENCY_CODE = "Refer1669";
+let allData = [];
+let wardConfigs = {};
+let currentRole = 'guest';
+let currentHosp = '';
+let isEmergency = false;
+
+// --- Core Utils ---
+const getElapsedInfo = (ts, targetHosp) => {
+    if (!ts) return { text: "-", isOverdue: false };
+    const diffMs = new Date() - new Date(parseInt(ts));
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    // Logic: Nadee 48h, Others 24h
+    const limit = (targetHosp === "โรงพยาบาลนาดี") ? 48 : 24;
+    const isOverdue = diffHrs >= limit;
+    
+    let timeText = "";
+    if (diffHrs > 0) timeText += `${diffHrs} ชม. `;
+    timeText += `${diffMins} นาที`;
+    
+    return { text: timeText, isOverdue };
+};
+
+const toggleLoader = (s) => document.getElementById('global-loader').classList.toggle('hidden', !s);
+const closeModal = (id) => document.getElementById(id).classList.add('hidden');
+const getFormattedDate = () => {
+    const n = new Date();
+    return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()+543}`;
+};
+
+// ฟังก์ชันช่วยจัดรูปแบบเบอร์โทรให้มีเลข 0 นำหน้าเสมอ
+const formatPhone = (phone) => {
+    if(!phone) return "-";
+    let p = phone.toString().trim();
+    // ถ้าไม่มี 0 นำหน้า และมีความยาว 9 หลัก ให้เติม 0
+    if(p.length === 9 && !p.startsWith('0')) return '0' + p;
+    return p;
+};
+
+async function callApi(payload) {
+    try {
+        const r = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
+        return await r.json();
+    } catch (e) { console.error(e); return null; }
+}
+
+// --- Page Logic ---
+function changePage(p) {
+    document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById(`page-${p}`).classList.remove('hidden');
+    document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('nav-active'));
+    
+    let nid = `nav-${p}`;
+    if(p === 'admin-cho') nid = 'nav-cho';
+    if(p === 'admin-center') nid = 'nav-center';
+    const nb = document.getElementById(nid);
+    if(nb) nb.classList.add('nav-active');
+    
+    // อัปเดต UI ทันทีตามข้อมูลในมือ
+    if(p === 'dashboard') renderDashboard();
+    if(p === 'admin-cho') renderCHO();
+    if(p === 'admin-center') renderCenter();
+    window.scrollTo(0,0);
+}
+
+// --- Auth ---
+function openLoginModal(type) {
+    if(currentRole === type) {
+        changePage(type === 'cho' ? 'admin-cho' : 'admin-center');
+        return;
+    }
+    const m = document.getElementById('login-modal');
+    document.getElementById('login-hosp-select-div').classList.toggle('hidden', type !== 'cho');
+    document.getElementById('login-pass').value = '';
+    m.dataset.type = type;
+    m.classList.remove('hidden');
+}
+
+async function doLogin() {
+    const type = document.getElementById('login-modal').dataset.type;
+    const hosp = type === 'cho' ? document.getElementById('login-hosp').value : 'Center';
+    const pass = document.getElementById('login-pass').value;
+    
+    toggleLoader(true);
+    const res = await callApi({ action: 'login', hosp, pass });
+    if(res && res.isValid) {
+        currentRole = type;
+        currentHosp = hosp;
+        allData = res.items || [];
+        wardConfigs = res.wards || [];
+        
+        document.getElementById('login-info').classList.remove('hidden');
+        document.getElementById('user-role-display').innerText = hosp;
+        
+        closeModal('login-modal');
+        changePage(type === 'cho' ? 'admin-cho' : 'admin-center');
+    } else {
+        alert("รหัสผ่านไม่ถูกต้อง");
+    }
+    toggleLoader(false);
+}
+
+function logout() {
+    currentRole = 'guest';
+    currentHosp = '';
+    document.getElementById('login-info').classList.add('hidden');
+    changePage('entry');
+}
+
+// --- Emergency Unlock ---
+function openEmergencyModal() {
+    document.getElementById('emergency-modal').classList.remove('hidden');
+    document.getElementById('emergency-pass').value = '';
+}
+
+function doEmergencyUnlock() {
+    if(document.getElementById('emergency-pass').value === EMERGENCY_CODE) {
+        isEmergency = true;
+        closeModal('emergency-modal');
+        checkTime();
+        alert("ปลดล็อกโหมดฉุกเฉินสำเร็จ");
+    } else {
+        alert("รหัสไม่ถูกต้อง");
+    }
+}
+
+// --- Data & Rendering ---
+async function fetchData(silent = false) {
+    if(!silent) toggleLoader(true);
+    const res = await callApi({ action: 'getData' });
+    if(res) {
+        allData = res.items || [];
+        wardConfigs = res.wards || {};
+        updateWardList();
+        // อัปเดตหน้าปัจจุบัน
+        const visible = Array.from(document.querySelectorAll('.page-content')).find(p => !p.classList.contains('hidden'));
+        if(visible) {
+            if(visible.id === 'page-dashboard') renderDashboard();
+            if(visible.id === 'page-admin-cho') renderCHO();
+            if(visible.id === 'page-admin-center') renderCenter();
+        }
+    }
+    if(!silent) toggleLoader(false);
+}
+
+function renderDashboard() {
+    const p = allData.filter(i => i.Status === 'รอรับทราบ').length;
+    const w = allData.filter(i => i.Status === 'รพช.รับทราบแล้ว').length;
+    document.getElementById('count-pending').innerText = p;
+    document.getElementById('count-wait').innerText = w;
+
+    const list = document.getElementById('history-list');
+    const active = allData.filter(i => !['สำเร็จ', 'ยกเลิก', 'D/C'].includes(i.Status));
+    
+    list.innerHTML = active.map(i => {
+        const timeInfo = getElapsedInfo(i.Timestamp, i.TargetHosp);
+        const cardClass = timeInfo.isOverdue ? 'overdue-card' : `border-l-[6px] ${i.Status==='รอรับทราบ'?'border-sky-500':'border-emerald-500'}`;
+        
+        return `
+        <div class="glass p-5 rounded-[2rem] card-shadow ${cardClass}">
+            ${timeInfo.isOverdue ? '<div class="overdue-badge"><i class="fas fa-exclamation-circle mr-1"></i>เกินเวลา</div>' : ''}
+            <div class="flex justify-between items-start">
+                <span class="text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-1 rounded-full">${i.TargetHosp}</span>
+                <span class="text-[9px] font-bold px-2 py-1 rounded bg-slate-100">${i.Status}</span>
+            </div>
+            <div class="mt-2 font-bold">${i.PatientName}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Ward: ${i.Ward} | Ox: ${i.Oxygen}</div>
+            <div class="flex justify-between items-center mt-3 pt-3 border-t border-slate-50">
+                <div class="text-[10px] text-slate-400 font-medium">โทร: ${formatPhone(i.Phone)}</div>
+                <div class="text-[10px] ${timeInfo.isOverdue ? 'text-rose-600 font-bold' : 'text-slate-400'}">
+                    <i class="far fa-clock mr-1"></i>${timeInfo.text}
+                </div>
+            </div>
+        </div>
+    `}).join('') || '<div class="text-center py-10 opacity-30 italic">ไม่มีรายการ</div>';
+}
+
+function renderCHO() {
+    const list = document.getElementById('cho-list');
+    const my = allData.filter(i => i.TargetHosp === currentHosp && !['สำเร็จ', 'ยกเลิก', 'D/C'].includes(i.Status));
+    
+    list.innerHTML = my.map(i => {
+        const phone = formatPhone(i.Phone);
+        const timeInfo = getElapsedInfo(i.Timestamp, i.TargetHosp);
+        const cardClass = timeInfo.isOverdue ? 'overdue-card' : '';
+        
+        return `
+        <div class="glass p-5 rounded-[2rem] card-shadow ${cardClass}">
+            ${timeInfo.isOverdue ? '<div class="overdue-badge"><i class="fas fa-exclamation-circle mr-1"></i>เกินกำหนด</div>' : ''}
+            <div class="flex justify-between items-center mb-3">
+                <span class="font-bold text-sky-900">${i.PatientName}</span>
+                <div class="text-right">
+                    <div class="text-[9px] ${timeInfo.isOverdue ? 'text-rose-600 font-bold' : 'text-slate-400'}"><i class="far fa-clock mr-1"></i>${timeInfo.text}</div>
+                </div>
+            </div>
+            <div class="text-[11px] space-y-1 mb-4">
+                <p><b>Ward:</b> ${i.Ward} | <span class="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full text-[9px]">${i.Transport}</span></p>
+                <p><b>เบอร์ติดต่อ:</b> 
+                    <a href="tel:${phone}" class="bg-sky-50 text-sky-700 px-3 py-1 rounded-full font-bold ml-1 inline-flex items-center gap-1 border border-sky-200">
+                        <i class="fas fa-phone-alt text-[9px]"></i> ${phone}
+                    </a>
+                </p>
+                <p><b>Dx:</b> ${i.Diagnosis}</p>
+                <p class="text-slate-500 italic">"${i.Reason}"</p>
+            </div>
+            ${i.PdfUrl ? `<a href="${i.PdfUrl}" target="_blank" class="block w-full text-center py-3 border-2 border-rose-200 text-rose-600 rounded-2xl mb-2 text-xs font-bold"><i class="fas fa-file-pdf"></i> ดู PDF สรุปการรักษา</a>` : ''}
+            <button onclick="updateStatus('${i.ID}', 'รพช.รับทราบแล้ว')" class="w-full bg-sky-700 text-white py-4 rounded-2xl font-bold text-xs ${i.Status==='รพช.รับทราบแล้ว'?'opacity-30 pointer-events-none':''}">
+                ${i.Status==='รพช.รับทราบแล้ว'?'รับทราบแล้ว':'กดรับทราบเคส'}
+            </button>
+        </div>
+    `}).join('') || '<div class="text-center py-10 opacity-30 italic">ไม่มีเคสใหม่</div>';
+}
+
+function renderCenter() {
+    const list = document.getElementById('center-list');
+    const active = allData.filter(i => !['สำเร็จ', 'ยกเลิก', 'D/C'].includes(i.Status));
+    
+    list.innerHTML = active.map(i => {
+        const timeInfo = getElapsedInfo(i.Timestamp, i.TargetHosp);
+        const cardClass = timeInfo.isOverdue ? 'overdue-card' : 'border-l-4 border-indigo-500';
+        
+        return `
+        <div class="glass p-5 rounded-[2rem] card-shadow ${cardClass}">
+            ${timeInfo.isOverdue ? '<div class="overdue-badge">ประสานนานเกินกำหนด</div>' : ''}
+            <div class="flex justify-between">
+                <div class="font-bold text-sm">${i.PatientName}</div>
+                <div class="text-[9px] text-indigo-500 font-bold">${i.TargetHosp}</div>
+            </div>
+            <div class="flex justify-between items-center mt-1 mb-4">
+                <div class="text-[11px] text-slate-500">Ward: ${i.Ward} | สถานะ: ${i.Status}</div>
+                <div class="text-[10px] ${timeInfo.isOverdue ? 'text-rose-600 font-bold' : 'text-slate-400'}">
+                    <i class="far fa-clock mr-1"></i>${timeInfo.text}
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="openAction('${i.ID}', 'สำเร็จ', 'รับตัวกลับแล้ว')" class="bg-emerald-500 text-white py-2 rounded-xl text-[10px] font-bold">รพช.รับผู้ป่วยกลับแล้ว</button>
+                <button onclick="openAction('${i.ID}', 'สำเร็จ', 'ญาติพากลับ')" class="bg-amber-500 text-white py-2 rounded-xl text-[10px] font-bold">ญาติพาผู้ป่วยไป รพช. เองแล้ว</button>
+                <button onclick="openAction('${i.ID}', 'D/C', 'D/C')" class="bg-blue-500 text-white py-2 rounded-xl text-[10px] font-bold">จำหน่ายจากหอผู้ป่วยแล้ว</button>
+                <button onclick="openAction('${i.ID}', 'ยกเลิก', 'ขอยกเลิก')" class="bg-rose-500 text-white py-2 rounded-xl text-[10px] font-bold">ยกเลิกการประสานส่งต่อกลับ</button>
+            </div>
+        </div>
+    `}).join('') || '<div class="text-center py-10 opacity-30">ไม่มีเคสค้าง</div>';
+}
+
+// --- Actions ---
+async function updateStatus(id, status) {
+    toggleLoader(true);
+    await callApi({ action: 'updateStatus', id, status });
+    await fetchData(true);
+    toggleLoader(false);
+}
+
+function openAction(id, status, def) {
+    const m = document.getElementById('action-modal');
+    m.classList.remove('hidden');
+    document.getElementById('action-title-label').innerText = `ยืนยัน: ${status}`;
+    document.getElementById('action-reason').value = def;
+    document.getElementById('reason-confirm-btn').onclick = async () => {
+        toggleLoader(true);
+        const reason = document.getElementById('action-reason').value;
+        await callApi({ action: 'centerAction', id, status, reason });
+        closeModal('action-modal');
+        await fetchData(true);
+        toggleLoader(false);
+    };
+}
+
+function checkTime() {
+    const h = new Date().getHours();
+    const isOpen = (h >= 8 && h < 15) || isEmergency;
+    document.getElementById('time-lock-screen').classList.toggle('hidden', isOpen);
+    document.getElementById('referForm').classList.toggle('opacity-20', !isOpen);
+    document.getElementById('referForm').classList.toggle('pointer-events-none', !isOpen);
+    document.getElementById('time-status').innerHTML = isOpen 
+        ? `<i class="fas fa-circle text-[6px] text-emerald-400 mr-1"></i> เชื่อมต่อระบบ (พร้อมบริการ)`
+        : `<i class="fas fa-circle text-[6px] text-rose-400 mr-1"></i> ปิดบริการ (นอกเวลาทำการ)`;
+}
+
+// --- Form Utils ---
+function autoFillPhone() {
+    const w = document.getElementById('sourceWard').value;
+    if(wardConfigs[w]) document.getElementById('contactPhone').value = formatPhone(wardConfigs[w]);
+}
+function updateWardList() {
+    const dl = document.getElementById('ward-list');
+    dl.innerHTML = Object.keys(wardConfigs).map(w => `<option value="${w}">`).join('');
+}
+function toggleOtherHosp() {
+    const isOther = document.getElementById('targetHosp').value === 'Other';
+    const el = document.getElementById('otherHosp');
+    el.classList.toggle('hidden', !isOther);
+    el.required = isOther;
+}
+function updateFileName(inp) {
+    document.getElementById('fileNameDisplay').innerText = inp.files[0] ? inp.files[0].name : "เลือกไฟล์ PDF";
+}
+
+document.getElementById('referForm').onsubmit = async (e) => {
+    e.preventDefault();
+    toggleLoader(true);
+    const f = document.getElementById('pdfFile').files[0];
+    let pdf = "";
+    if(f) {
+        pdf = await new Promise(r => {
+            const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(f);
+        });
+    }
+    const hosp = document.getElementById('targetHosp').value;
+    const data = {
+        referDate: document.getElementById('referDate').value,
+        targetHosp: hosp === 'Other' ? document.getElementById('otherHosp').value : hosp,
+        ward: document.getElementById('sourceWard').value,
+        phone: document.getElementById('contactPhone').value,
+        hn: document.getElementById('patientHN').value,
+        name: document.getElementById('patientName').value,
+        diagnosis: document.getElementById('diagnosis').value,
+        isolation: document.getElementById('isolation').value,
+        oxygen: document.getElementById('oxygen').value,
+        reason: document.getElementById('reason').value,
+        transport: document.querySelector('input[name="transport"]:checked').value,
+        pdf, fileName: f ? f.name : ""
+    };
+    const res = await callApi({ action: 'submitForm', data });
+    if(res && res.status === 'success') {
+        document.getElementById('success-modal').classList.remove('hidden');
+        document.getElementById('referForm').reset();
+        document.getElementById('referDate').value = getFormattedDate();
+        await fetchData(true);
+    }
+    toggleLoader(false);
+};
+
+window.onload = () => {
+    document.getElementById('referDate').value = getFormattedDate();
+    checkTime();
+    fetchData();
+    setInterval(checkTime, 60000);
+    setInterval(() => fetchData(true), 30000); // ดึงข้อมูลใหม่ทุก 30 วินาที
+};
+</script>
+</body>
+</html>
